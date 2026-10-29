@@ -37,9 +37,9 @@ input:focus{outline:3px solid #d6c6fb;border-color:var(--noda)}
 .hint{font-size:13px;color:var(--abu);margin-top:9px}
 #out{margin-top:18px;display:grid;gap:12px}
 .ringkas{font-weight:600;color:var(--tinta)}
-.tiket{position:relative;background:var(--kertas);border-radius:14px;padding:14px 14px 14px 76px;box-shadow:0 6px 18px -10px rgba(43,22,89,.4);animation:muncul .35s ease both}
+.tiket{position:relative;background:radial-gradient(circle 8px at 63px 0,var(--bg) 97%,#0000) top/100% 51% no-repeat,radial-gradient(circle 8px at 63px 100%,var(--bg) 97%,#0000) bottom/100% 51% no-repeat,var(--kertas);border-radius:14px;padding:14px 14px 14px 76px;box-shadow:0 6px 18px -10px rgba(43,22,89,.4);animation:muncul .35s ease both}
 .tiket::before{content:"";position:absolute;left:62px;top:10px;bottom:10px;border-left:2px dashed var(--garis)}
-.tiket::after{content:"";position:absolute;left:55px;top:-8px;width:16px;height:16px;border-radius:50%;background:var(--bg);box-shadow:0 calc(100% + 0px) 0 var(--bg)}
+
 .coblos{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:var(--tinta);color:#fff;display:grid;place-items:center;font:800 17px "Bricolage Grotesque",sans-serif}
 .coblos.utama{background:var(--hijau)}
 .tiket h3{font-size:18px;font-weight:700;margin-bottom:3px;overflow-wrap:anywhere}
@@ -65,6 +65,18 @@ footer{text-align:center;font-size:12.5px;color:var(--abu);padding:0 16px calc(e
 select{width:100%;border:2px solid var(--garis);border-radius:12px;padding:12px;font:500 16px "Public Sans",sans-serif;background:#fff;color:var(--teks)}
 select:focus{outline:3px solid #d6c6fb;border-color:var(--noda)}
 select:disabled,.wil input:disabled{opacity:.5}
+details summary{font-weight:700;color:var(--tinta);cursor:pointer;padding:2px 0}
+details[open] summary{margin-bottom:14px}
+.tabs.dua{grid-template-columns:repeat(2,1fr)}
+.jd{font-size:21px;font-weight:800;color:var(--tinta)}
+.filter{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 4px}
+.filter input{grid-column:1/-1;width:100%;font-size:16px}
+.daf{display:grid;gap:12px;margin-top:12px}
+.pg{margin-top:18px;display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:stretch}
+.pg select{width:auto;padding:10px 8px;font-size:14px;font-weight:600}
+.fam:disabled{opacity:.35;cursor:default}
+#daftar{scroll-margin-top:12px}
+#fout{display:grid;gap:12px;margin-top:14px}
 @keyframes muncul{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
@@ -80,36 +92,40 @@ select:disabled,.wil input:disabled{opacity:.5}
 
 <main>
   <section class="card">
-    <div class="tabs" role="tablist" aria-label="Cari berdasarkan">
-      <button role="tab" data-m="nama" aria-selected="true">Nama</button>
-      <button role="tab" data-m="nik" aria-selected="false">NIK</button>
-      <button role="tab" data-m="kk" aria-selected="false">No. KK</button>
-      <button role="tab" data-m="rtrw" aria-selected="false">RT/RW</button>
-    </div>
-    <form id="f" autocomplete="off">
-      <label for="q" id="lbl">Nama kamu</label>
-      <div class="row">
-        <input id="q" type="text" enterkeyhint="search" placeholder="Ketik nama lengkap atau sebagian">
-        <button class="go" type="submit">Cek</button>
+    <details id="kel">
+      <summary>Cek keluarga lewat NIK atau No. KK</summary>
+      <div class="tabs dua" role="tablist" aria-label="Cari berdasarkan">
+        <button role="tab" data-m="nik" aria-selected="true">NIK</button>
+        <button role="tab" data-m="kk" aria-selected="false">No. KK</button>
       </div>
-      <p class="hint" id="hint"></p>
-    </form>
-    <div id="wil" hidden>
-      <div class="wil">
-        <div><label for="rw">RW</label><select id="rw"><option value="">Pilih RW</option></select></div>
-        <div><label for="rt">RT</label><select id="rt" disabled><option value="">Semua RT</option></select></div>
-        <div class="cr"><input id="cn" type="text" placeholder="Cari nama di daftar ini (opsional)" disabled></div>
-      </div>
-      <p class="hint">Pilih RW, lalu RT, untuk melihat daftar pemilih. NIK dan No. KK tetap disamarkan.</p>
+      <form id="f" autocomplete="off">
+        <label for="q" id="lbl">NIK (16 digit)</label>
+        <div class="row">
+          <input id="q" type="text" inputmode="numeric" maxlength="16" enterkeyhint="search" placeholder="Masukkan 16 digit NIK">
+          <button class="go" type="submit">Cek</button>
+        </div>
+        <p class="hint" id="hint">Ketik NIK lengkap sesuai KTP.</p>
+      </form>
+      <div id="fout" aria-live="polite"></div>
+    </details>
+  </section>
+
+  <section class="card" id="daftar" style="margin-top:14px">
+    <h2 class="jd">Daftar Pemilih Sementara</h2>
+    <div class="filter">
+      <input id="cn" type="search" placeholder="Cari nama" aria-label="Cari nama">
+      <select id="rw" aria-label="Filter RW"><option value="">Semua RW</option></select>
+      <select id="rt" aria-label="Filter RT"><option value="">Semua RT</option></select>
     </div>
-    <div id="out" aria-live="polite"></div>
+    <div id="out" aria-live="polite"><p class="hint">Memuat data…</p></div>
+    <nav class="pg" id="pg" aria-label="Halaman" hidden></nav>
   </section>
 
   <section class="info">
     <b>Tentang data ini</b>
     <ul>
-      <li>NIK dan No. KK hanya tampil sebagian, sisanya disamarkan.</li>
-      <li>Daftar nama per RT/RW bisa dilihat siapa saja. Untuk detail anggota keluarga, masukkan NIK atau No. KK lengkap.</li>
+      <li>Daftar nama bisa dilihat semua orang. NIK dan No. KK hanya tampil sebagian, sisanya disamarkan.</li>
+      <li>Untuk detail anggota keluarga, gunakan menu cek lewat NIK atau No. KK lengkap.</li>
       <li>Data salah atau belum terdaftar? Sampaikan ke panitia sebelum masa perbaikan DPS berakhir.</li>
     </ul>
   </section>
@@ -121,95 +137,95 @@ const CFG={
   desa:"Desa Kasomalang Kulon",
   judul:"Cek namamu di DPS Pilkades",
   panitia:"Panitia Pilkades Desa Kasomalang Kulon",
-  wa:"6281234567890"   // nomor WhatsApp panitia, format 62xxxx. Kosongkan "" untuk menyembunyikan tombol
+  wa:"6281234567890",   // nomor WhatsApp panitia, format 62xxxx. Kosongkan "" untuk menyembunyikan tombol
+  perHalaman:20
 };
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
-const MODE={
-  nama:{lbl:"Nama kamu",ph:"Ketik nama lengkap atau sebagian",hint:"Minimal 3 huruf. Hasil menampilkan maksimal 15 nama.",num:false},
-  nik:{lbl:"NIK (16 digit)",ph:"Masukkan 16 digit NIK",hint:"Ketik NIK lengkap sesuai KTP.",num:true},
-  kk:{lbl:"Nomor KK (16 digit)",ph:"Masukkan 16 digit No. KK",hint:"Ketik No. KK lengkap untuk melihat seluruh anggota keluarga.",num:true}
-};
-MODE.rtrw={lbl:"",ph:"",hint:"",num:false};
-let mode="nama",DB=null,byNik=new Map(),byKk=new Map();
+const cmp=(a,b)=>String(a).localeCompare(String(b),"id",{numeric:true});
+const uniq=a=>[...new Set(a)].filter(Boolean).sort(cmp);
+const opsi=(sel,arr,first)=>{sel.innerHTML=`<option value="">${first}</option>`+arr.map(v=>`<option>${esc(v)}</option>`).join("")};
+const FM={nik:{lbl:"NIK (16 digit)",ph:"Masukkan 16 digit NIK",hint:"Ketik NIK lengkap sesuai KTP."},
+          kk:{lbl:"Nomor KK (16 digit)",ph:"Masukkan 16 digit No. KK",hint:"Ketik No. KK lengkap untuk melihat seluruh anggota keluarga."}};
+let fm="nik",DB=null,rows=[],byNik=new Map(),byKk=new Map(),lis=[],page=1;
 
 document.title=CFG.judul;$("#judul").textContent=CFG.judul;$("#desa").textContent=CFG.desa;
 $("#foot").textContent="Dikelola oleh "+CFG.panitia;
 
+function msg(judul,isi,wa,t="#fout"){
+  $(t).innerHTML=`<div class="kosong"><h3>${esc(judul)}</h3><p>${esc(isi)}</p>${wa&&CFG.wa?`<a href="https://wa.me/${CFG.wa}?text=${encodeURIComponent("Halo panitia, saya ingin menanyakan data DPS saya.")}">Hubungi panitia</a>`:""}</div>`;
+}
+function tiket(r,utama,daf){
+  return `<article class="tiket"><div class="coblos ${utama?"utama":""}">${utama?"✓":esc(r.n.trim()[0]||"?").toUpperCase()}</div>
+  <h3>${esc(r.n)}</h3><p class="no">NIK ${esc(r.nk)}</p><p class="no">KK&nbsp; ${esc(r.kk)}</p>
+  <div class="tags">${daf?"":'<span class="ok">Terdaftar di DPS</span>'}${r.rt||r.rw?`<span>RT ${esc(r.rt)}/RW ${esc(r.rw)}</span>`:""}${r.t?`<span>TPS ${esc(r.t)}</span>`:""}</div></article>`;
+}
+
+/* ---------- Daftar + filter + pagination ---------- */
 fetch("data.json",{cache:"no-cache"}).then(r=>r.json()).then(d=>{
-  DB=d;
-  d.rows.forEach(r=>{r._n=norm(r.n);byNik.set(r.hn,r);(byKk.get(r.hk)||byKk.set(r.hk,[]).get(r.hk)).push(r)});
-  wilInit();const t=$("#total");t.hidden=false;t.textContent=d.rows.length.toLocaleString("id-ID")+" pemilih terdaftar di DPS";
-}).catch(()=>msg("Data belum bisa dimuat","Periksa koneksi internet lalu muat ulang halaman."));
+  DB=d;rows=d.rows;
+  rows.forEach(r=>{r._n=norm(r.n);byNik.set(r.hn,r);(byKk.get(r.hk)||byKk.set(r.hk,[]).get(r.hk)).push(r)});
+  rows.sort((a,b)=>cmp(a.rw,b.rw)||cmp(a.rt,b.rt)||a.n.localeCompare(b.n,"id"));
+  opsi($("#rw"),uniq(rows.map(r=>r.rw)),"Semua RW");opsi($("#rt"),uniq(rows.map(r=>r.rt)),"Semua RT");
+  const t=$("#total");t.hidden=false;t.textContent=rows.length.toLocaleString("id-ID")+" pemilih terdaftar di DPS";
+  terapkan();
+}).catch(()=>{msg("Data belum bisa dimuat","Periksa koneksi internet lalu muat ulang halaman.",0,"#out")});
 
-document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
-  mode=b.dataset.m;
-  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x===b));
-  const m=MODE[mode],q=$("#q");
-  $("#lbl").textContent=m.lbl;q.placeholder=m.ph;$("#hint").textContent=m.hint;
-  q.value="";q.inputMode=m.num?"numeric":"text";q.maxLength=m.num?16:60;$("#out").innerHTML="";$("#f").hidden=mode==="rtrw";$("#wil").hidden=mode!=="rtrw";if(mode==="rtrw")wilReset();else q.focus();
+function terapkan(){
+  const w=norm($("#cn").value).split(" ").filter(Boolean),rw=$("#rw").value,rt=$("#rt").value;
+  lis=rows.filter(r=>(!rw||r.rw===rw)&&(!rt||r.rt===rt)&&w.every(x=>r._n.includes(x)));
+  page=1;render(false);
+}
+function render(gulir){
+  const per=CFG.perHalaman,n=lis.length,hal=Math.max(1,Math.ceil(n/per)),sh=lis.slice((page-1)*per,page*per);
+  const rw=$("#rw").value,rt=$("#rt").value,ket=[rw&&"RW "+rw,rt&&"RT "+rt].filter(Boolean).join(", ");
+  $("#out").innerHTML=`<p class="ringkas">${n.toLocaleString("id-ID")} pemilih${ket?" di "+esc(ket):""}</p>`+
+    (n?`<div class="daf">${sh.map(r=>tiket(r,false,true)).join("")}</div>`:`<div class="kosong"><h3>Tidak ada hasil</h3><p>Ubah kata kunci atau filter RT/RW.</p></div>`);
+  const pg=$("#pg");pg.hidden=hal<=1;
+  pg.innerHTML=`<button class="fam" id="pv" ${page<=1?"disabled":""}>Sebelumnya</button>
+    <select id="pj" aria-label="Pilih halaman">${Array.from({length:hal},(_,i)=>`<option value="${i+1}" ${i+1===page?"selected":""}>Hal ${i+1} / ${hal}</option>`).join("")}</select>
+    <button class="fam" id="nx" ${page>=hal?"disabled":""}>Berikutnya</button>`;
+  $("#pv").onclick=()=>buka(page-1);$("#nx").onclick=()=>buka(page+1);$("#pj").onchange=e=>buka(+e.target.value);
+  if(gulir)$("#daftar").scrollIntoView({block:"start"});
+}
+function buka(p){page=p;render(true)}
+$("#cn").addEventListener("input",terapkan);
+$("#rt").addEventListener("change",terapkan);
+$("#rw").addEventListener("change",()=>{
+  const rw=$("#rw").value;
+  opsi($("#rt"),uniq(rows.filter(r=>!rw||r.rw===rw).map(r=>r.rt)),"Semua RT");terapkan();
 });
-$("#hint").textContent=MODE.nama.hint;
-$("#q").addEventListener("input",e=>{if(MODE[mode].num)e.target.value=e.target.value.replace(/\D/g,"")});
 
-const uniq=a=>[...new Set(a)].filter(Boolean).sort((x,y)=>x.localeCompare(y,"id",{numeric:true}));
-const opsi=(sel,arr,first)=>{sel.innerHTML=`<option value="">${first}</option>`+arr.map(v=>`<option>${esc(v)}</option>`).join("")};
-let cur=[],page=1;
-function wilInit(){opsi($("#rw"),uniq(DB.rows.map(r=>r.rw)),"Pilih RW")}
-function wilReset(){$("#rw").value="";opsi($("#rt"),[],"Semua RT");$("#rt").disabled=true;$("#cn").value="";$("#cn").disabled=true}
-$("#rw").onchange=()=>{const rw=$("#rw").value;opsi($("#rt"),uniq(DB.rows.filter(r=>r.rw===rw).map(r=>r.rt)),"Semua RT");$("#rt").disabled=!rw;$("#cn").disabled=!rw;wilCari()};
-$("#rt").onchange=wilCari;$("#cn").oninput=wilCari;
-function wilCari(){
-  const rw=$("#rw").value,rt=$("#rt").value,w=norm($("#cn").value).split(" ").filter(Boolean);
-  if(!rw){$("#out").innerHTML="";return}
-  cur=DB.rows.filter(r=>r.rw===rw&&(!rt||r.rt===rt)&&w.every(x=>r._n.includes(x)))
-    .sort((a,b)=>a.rt.localeCompare(b.rt,"id",{numeric:true})||a.n.localeCompare(b.n,"id"));
-  page=1;tampilWil(rw,rt);
-}
-function tampilWil(rw,rt){
-  const n=cur.length,sh=cur.slice(0,page*40);
-  $("#out").innerHTML=`<p class="ringkas">${n} pemilih di RW ${esc(rw)}${rt?" / RT "+esc(rt):""}</p>`+sh.map(r=>tiket(r,false)).join("")+(n>sh.length?`<button class="fam" id="mr">Tampilkan lebih banyak (${n-sh.length})</button>`:"");
-  const mr=$("#mr");if(mr)mr.onclick=()=>{page++;tampilWil(rw,rt)};
-}
+/* ---------- Cek keluarga lewat NIK / KK ---------- */
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  fm=b.dataset.m;
+  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  const m=FM[fm],q=$("#q");$("#lbl").textContent=m.lbl;q.placeholder=m.ph;$("#hint").textContent=m.hint;
+  q.value="";$("#fout").innerHTML="";q.focus();
+});
+$("#q").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"")});
 async function hash(kind,val){
   const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(kind+":"+val),"PBKDF2",false,["deriveBits"]);
   const bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:new TextEncoder().encode(DB.salt),iterations:DB.iter,hash:"SHA-256"},k,256);
   return [...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,"0")).join("");
 }
-function msg(judul,isi,wa){
-  $("#out").innerHTML=`<div class="kosong"><h3>${esc(judul)}</h3><p>${esc(isi)}</p>${wa&&CFG.wa?`<a href="https://wa.me/${CFG.wa}?text=${encodeURIComponent("Halo panitia, saya ingin menanyakan data DPS saya.")}">Hubungi panitia</a>`:""}</div>`;
-}
-function tiket(r,utama){
-  return `<article class="tiket"><div class="coblos ${utama?"utama":""}">${utama?"✓":esc(r.n.trim()[0]||"?").toUpperCase()}</div>
-  <h3>${esc(r.n)}</h3><p class="no">NIK ${esc(r.nk)}</p><p class="no">KK&nbsp; ${esc(r.kk)}</p>
-  <div class="tags"><span class="ok">Terdaftar di DPS</span>${r.rt?`<span>RT ${esc(r.rt)}/RW ${esc(r.rw)}</span>`:""}${r.t?`<span>TPS ${esc(r.t)}</span>`:""}</div></article>`;
-}
-function keluarga(list){
-  $("#out").innerHTML=`<div class="kepala"><h2>${list.length} anggota keluarga</h2><p>KK ${esc(list[0].kk)} terdaftar di DPS</p></div>`+list.map((r,i)=>tiket(r,false)).join("");
+function keluarga(l){
+  $("#fout").innerHTML=`<div class="kepala"><h2>${l.length} anggota keluarga</h2><p>KK ${esc(l[0].kk)} terdaftar di DPS</p></div>`+l.map(r=>tiket(r,false,true)).join("");
 }
 $("#f").addEventListener("submit",async e=>{
   e.preventDefault();
   if(!DB)return msg("Data masih dimuat","Tunggu sebentar lalu coba lagi.");
-  const v=$("#q").value.trim(),out=$("#out");
-  if(mode==="nama"){
-    const w=norm(v).split(" ").filter(Boolean);
-    if(norm(v).length<3)return msg("Nama terlalu pendek","Ketik minimal 3 huruf.");
-    const hasil=DB.rows.filter(r=>w.every(x=>r._n.includes(x)));
-    if(!hasil.length)return msg("Nama tidak ditemukan","Coba ejaan lain, atau cek lewat NIK. Jika memang belum terdaftar, hubungi panitia.",1);
-    const tampil=hasil.slice(0,15);
-    out.innerHTML=`<p class="ringkas">${hasil.length>15?"Lebih dari 15 nama cocok, tampil 15 pertama. Ketik nama lebih lengkap.":hasil.length+" nama ditemukan"}</p>`+tampil.map(r=>tiket(r,false)).join("");
-    return;
-  }
+  const v=$("#q").value.trim(),out=$("#fout");
   if(v.length!==16)return msg("Nomor belum lengkap","Masukkan tepat 16 digit.");
   const btn=$(".go");btn.disabled=true;btn.textContent="…";
   try{
-    const h=await hash(mode,v);
-    if(mode==="nik"){
+    const h=await hash(fm,v);
+    if(fm==="nik"){
       const r=byNik.get(h);
       if(!r)return msg("NIK tidak ditemukan di DPS","Periksa kembali angkanya. Jika sudah benar, hubungi panitia.",1);
       const n=byKk.get(r.hk).length;
-      out.innerHTML=tiket(r,true)+(n>1?`<button class="fam" id="bf">Lihat ${n} anggota keluarga</button>`:"");
+      out.innerHTML=tiket(r,true,false)+(n>1?`<button class="fam" id="bf">Lihat ${n} anggota keluarga</button>`:"");
       const bf=$("#bf");if(bf)bf.onclick=()=>keluarga(byKk.get(r.hk));
     }else{
       const l=byKk.get(h);
