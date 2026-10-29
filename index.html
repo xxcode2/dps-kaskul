@@ -159,7 +159,7 @@ function msg(judul,isi,wa,t="#fout"){
 function tiket(r,utama,daf){
   return `<article class="tiket"><div class="coblos ${utama?"utama":""}">${utama?"✓":esc(r.n.trim()[0]||"?").toUpperCase()}</div>
   <h3>${esc(r.n)}</h3><p class="no">NIK ${esc(r.nk)}</p><p class="no">KK&nbsp; ${esc(r.kk)}</p>
-  <div class="tags">${daf?"":'<span class="ok">Terdaftar di DPS</span>'}${r.rt||r.rw?`<span>RT ${esc(r.rt)}/RW ${esc(r.rw)}</span>`:""}${r.t?`<span>TPS ${esc(r.t)}</span>`:""}</div></article>`;
+  <div class="tags">${daf?"":'<span class="ok">Terdaftar di DPS</span>'}<span>${r.u?`Usia ${esc(r.u)} tahun`:"Usia tidak tercantum"}</span>${r.rt||r.rw?`<span>RT ${esc(r.rt)}/RW ${esc(r.rw)}</span>`:""}${r.t?`<span>TPS ${esc(r.t)}</span>`:""}</div></article>`;
 }
 
 /* ---------- Daftar + filter + pagination ---------- */

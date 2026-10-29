@@ -2,7 +2,7 @@
 """Ubah data DPS (CSV/XLSX) menjadi data.json AMAN untuk dipublikasikan.
 Semua sheet XLSX dengan kolom nama, nik, dan kk akan digabung.
 Pakai:  python3 convert.py data-dps.xlsx      (XLSX butuh: pip install openpyxl)
-Kolom wajib (baris pertama): nama, nik, kk   Opsional: rt, rw, tps
+Kolom wajib (baris pertama): nama, nik, kk   Opsional: usia, rt, rw, tps
 JANGAN upload file sumber (csv/xlsx) ke Vercel. Hanya upload data.json."""
 import csv, json, re, sys, secrets, hashlib
 
@@ -48,7 +48,7 @@ def main():
             lewat += 1; continue
         if kk not in kk_cache: kk_cache[kk] = hsh(salt, "kk", kk)
         rows.append({"n": nama, "nk": samar(nik), "kk": samar(kk), "hn": hsh(salt, "nik", nik), "hk": kk_cache[kk],
-                     "rt": pad(r.get("rt")), "rw": pad(r.get("rw")), "t": str(r.get("tps") or "").strip()})
+                     "u": digit(r.get("usia")), "rt": pad(r.get("rt")), "rw": pad(r.get("rw")), "t": str(r.get("tps") or "").strip()})
     with open("data.json", "w", encoding="utf-8") as f:
         json.dump({"salt": salt, "iter": ITER, "rows": rows}, f, ensure_ascii=False, separators=(",", ":"))
     print(f"Selesai: {len(rows)} pemilih, {len(kk_cache)} KK, {lewat} dilewati -> data.json")
