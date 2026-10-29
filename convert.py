@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Ubah data DPS (CSV/XLSX) menjadi data.json AMAN untuk dipublikasikan.
+Semua sheet XLSX dengan kolom nama, nik, dan kk akan digabung.
 Pakai:  python3 convert.py data-dps.xlsx      (XLSX butuh: pip install openpyxl)
 Kolom wajib (baris pertama): nama, nik, kk   Opsional: rt, rw, tps
 JANGAN upload file sumber (csv/xlsx) ke Vercel. Hanya upload data.json."""
@@ -19,9 +20,21 @@ def hsh(salt, kind, val):
 def baca(path):
     if path.lower().endswith((".xlsx", ".xlsm")):
         import openpyxl
-        it = openpyxl.load_workbook(path, read_only=True, data_only=True).active.iter_rows(values_only=True)
-        kepala = [str(c or "").strip().lower() for c in next(it)]
-        return [dict(zip(kepala, r)) for r in it]
+        wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+        hasil = []
+        for sheet in wb.worksheets:
+            it = iter(sheet.iter_rows(values_only=True))
+            kepala = None
+            for _ in range(12):
+                try: baris = next(it)
+                except StopIteration: break
+                kolom = [str(c or "").strip().lower() for c in baris]
+                if all(k in kolom for k in ("nama", "nik", "kk")):
+                    kepala = kolom; break
+            if kepala:
+                hasil.extend(dict(zip(kepala, r)) for r in it if any(c is not None for c in r))
+        wb.close()
+        return hasil
     with open(path, encoding="utf-8-sig", newline="") as f:
         s = f.read(); d = csv.Sniffer().sniff(s[:2000], delimiters=",;\t")
         return [{(k or "").strip().lower(): v for k, v in r.items()} for r in csv.DictReader(s.splitlines(), delimiter=d.delimiter)]
@@ -32,7 +45,7 @@ def main():
     for r in baca(sys.argv[1]):
         nama = str(r.get("nama") or "").strip(); nik = digit(r.get("nik")); kk = digit(r.get("kk"))
         if not nama or len(nik) != 16 or len(kk) != 16:
-            lewat += 1; print(f"DILEWATI (nama/NIK/KK tidak valid): {nama or '(kosong)'}"); continue
+            lewat += 1; continue
         if kk not in kk_cache: kk_cache[kk] = hsh(salt, "kk", kk)
         rows.append({"n": nama, "nk": samar(nik), "kk": samar(kk), "hn": hsh(salt, "nik", nik), "hk": kk_cache[kk],
                      "rt": pad(r.get("rt")), "rw": pad(r.get("rw")), "t": str(r.get("tps") or "").strip()})
