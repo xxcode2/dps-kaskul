@@ -1,55 +1,324 @@
 #!/usr/bin/env python3
-"""Ubah data DPS (CSV/XLSX) menjadi data.json AMAN untuk dipublikasikan.
-Semua sheet XLSX dengan kolom nama, nik, dan kk akan digabung.
-Pakai:  python3 convert.py data-dps.xlsx      (XLSX butuh: pip install openpyxl)
-Kolom wajib (baris pertama): nama, nik, kk   Opsional: usia, rt, rw, tps
-JANGAN upload file sumber (csv/xlsx) ke Vercel. Hanya upload data.json."""
-import csv, json, re, sys, secrets, hashlib
+"""Ubah data DPS (XLSX/CSV) menjadi data.json yang aman dipublikasikan.
 
-ITER = 100000      # makin besar makin sulit ditebak, harus sama dengan yang tertulis di data.json
-AWAL, AKHIR = 4, 3  # jumlah digit yang ditampilkan di awal dan di ujung
+Semua sheet yang punya kolom NAMA + NIK akan digabung. Sheet rekap
+(contoh: "Sheet1") otomatis dilewati.
 
-def pad(x):
-    x = re.sub(r"\.0$", "", str(x if x is not None else "").strip())
-    return x.zfill(2) if x.isdigit() else x
-def digit(x): return re.sub(r"\D", "", str(x if x is not None else ""))
-def samar(x): return x[:AWAL] + "*" * (len(x) - AWAL - AKHIR) + x[-AKHIR:]
-def hsh(salt, kind, val):
-    return hashlib.pbkdf2_hmac("sha256", f"{kind}:{val}".encode(), salt.encode(), ITER).hex()
+Pakai:
+    python convert.py "DAFTAR PEMILIH SEMENTARA (2).xlsx"
 
-def baca(path):
-    if path.lower().endswith((".xlsx", ".xlsm")):
-        import openpyxl
-        wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-        hasil = []
-        for sheet in wb.worksheets:
-            it = iter(sheet.iter_rows(values_only=True))
-            kepala = None
-            for _ in range(12):
-                try: baris = next(it)
-                except StopIteration: break
-                kolom = [str(c or "").strip().lower() for c in baris]
-                if all(k in kolom for k in ("nama", "nik", "kk")):
-                    kepala = kolom; break
-            if kepala:
-                hasil.extend(dict(zip(kepala, r)) for r in it if any(c is not None for c in r))
-        wb.close()
-        return hasil
+Butuh: pip install openpyxl   (hanya untuk XLSX)
+
+Yang dilakukan skrip ini:
+  * menyatukan semua sheet RW + sheet TAMBAHAN
+  * merapikan RT/RW jadi 3 digit dan menebak RW dari nama sheet
+  * membuang baris ganda (satu NIK = satu pemilih)
+  * menyamarkan NIK / No. KK (hanya sebagian digit yang tampil)
+  * menyimpan sidik jari (PBKDF2) NIK & KK agar pencarian tetap bisa
+    dilakukan tanpa menyimpan nomor aslinya
+  * menulis data.json ringkas (array, bukan objek, supaya file kecil)
+
+JANGAN upload file XLSX/CSV ke hosting. Hanya data.json.
+"""
+import csv
+import difflib
+import json
+import os
+import re
+import secrets
+import sys
+from collections import Counter, defaultdict
+from concurrent.futures import ProcessPoolExecutor
+from hashlib import pbkdf2_hmac
+
+ITER = 100_000          # putaran PBKDF2, harus sama dengan yang dibaca index.html
+AWAL, AKHIR = 4, 4      # digit NIK/KK yang tetap ditampilkan
+PANJANG_HASH = 32       # 128 bit cukup, file lebih kecil
+USIA_MIN, USIA_MAKS = 17, 110
+
+GELAR = {
+    "SE", "SH", "ST", "SP", "SPD", "SSOS", "SKM", "SKEP", "SIP", "SHI", "SIKOM",
+    "MM", "MPD", "MHI", "MSI", "MAP", "AMD", "AMK", "AMd", "SIP", "SAP", "SHUT",
+    "SAG", "SPI", "SPT", "SPWK", "SSI", "SFARM", "SKED", "MKES", "MKM", "MH",
+    "DRS", "DRA", "IR", "HJ", "H", "HAJI", "HAJJAH", "S", "M", "A", "MD", "BA",
+}
+
+
+def teks(x):
+    return re.sub(r"\s+", " ", str(x if x is not None else "").strip()).upper()
+
+
+def angka(x):
+    return re.sub(r"\D", "", str(x if x is not None else ""))
+
+
+def tiga(x):
+    """'7' -> '007', '007' -> '007', '' -> ''."""
+    x = angka(x)
+    return x.zfill(3) if x else ""
+
+
+def judul(nama):
+    """'ABDUL LATIF, S.PD' -> 'Abdul Latif, S.PD' (gelar tetap kapital)."""
+    out = []
+    for kata in nama.split(" "):
+        inti = kata.strip(",.")
+        kecil = inti.replace(".", "")
+        if not inti:
+            out.append(kata)
+        elif "." in kata or kecil in GELAR:
+            out.append(kata)                                  # gelar: biarkan
+        elif kata.isdigit():
+            out.append(kata)
+        else:
+            out.append(kata[0] + kata[1:].lower())
+    return " ".join(out)
+
+
+def samar(x):
+    if len(x) < AWAL + AKHIR + 1:
+        return ""
+    return x[:AWAL] + "*" * (len(x) - AWAL - AKHIR) + x[-AKHIR:]
+
+
+def _hash(job):
+    salt, kind, val = job
+    return pbkdf2_hmac("sha256", f"{kind}:{val}".encode(), salt.encode(), ITER)[: PANJANG_HASH // 2].hex()
+
+
+def baca_xlsx(path):
+    import openpyxl
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    baris = []
+    for sheet in wb.worksheets:
+        kepala = None
+        for i, r in enumerate(sheet.iter_rows(values_only=True), start=1):
+            sel = [teks(c) for c in r]
+            if "NAMA" in sel and "NIK" in sel:
+                kepala = {k: j for j, k in enumerate(sel) if k}
+                break
+        if not kepala:
+            continue                                      # sheet rekap / kosong
+        cocok = re.search(r"RW\.?\s*0*(\d+)", sheet.title, re.I)
+        rw_sheet = tiga(cocok.group(1)) if cocok else ""
+        for r in sheet.iter_rows(min_row=i + 1, values_only=True):
+            def ambil(k):
+                j = kepala.get(k)
+                return r[j] if j is not None and j < len(r) else None
+            nama = teks(ambil("NAMA"))
+            if not nama or nama == "NAMA" or nama.isdigit():
+                continue                                  # baris nomor urut / kosong
+            baris.append({
+                "nama": nama,
+                "nik": angka(ambil("NIK")),
+                "kk": angka(ambil("KK")),
+                "jk": teks(ambil("JENIS KELAMIN")),
+                "usia": angka(ambil("USIA")),
+                "rt": tiga(ambil("RT")),
+                "rw": tiga(ambil("RW")) or rw_sheet,
+                "sheet": sheet.title,
+                "tambahan": "TAMBAHAN" in sheet.title.upper(),
+            })
+    wb.close()
+    return baris
+
+
+def baca_csv(path):
     with open(path, encoding="utf-8-sig", newline="") as f:
-        s = f.read(); d = csv.Sniffer().sniff(s[:2000], delimiters=",;\t")
-        return [{(k or "").strip().lower(): v for k, v in r.items()} for r in csv.DictReader(s.splitlines(), delimiter=d.delimiter)]
+        s = f.read()
+        d = csv.Sniffer().sniff(s[:2000], delimiters=",;\t")
+        baris = []
+        for r in csv.DictReader(s.splitlines(), delimiter=d.delimiter):
+            g = {(k or "").strip().lower(): v for k, v in r.items()}
+            nama = teks(g.get("nama"))
+            if not nama:
+                continue
+            baris.append({"nama": nama, "nik": angka(g.get("nik")), "kk": angka(g.get("kk")),
+                          "jk": teks(g.get("jenis kelamin")) or teks(g.get("jk")),
+                          "usia": angka(g.get("usia")), "rt": tiga(g.get("rt")),
+                          "rw": tiga(g.get("rw")), "sheet": "csv", "tambahan": False})
+        return baris
+
+
+SINGKATAN = {"M": "MUHAMMAD", "MUH": "MUHAMMAD", "MOH": "MUHAMMAD", "MOCH": "MUHAMMAD",
+             "MOCHAMAD": "MUHAMMAD", "MOCHAMMAD": "MUHAMMAD", "MUHAMAD": "MUHAMMAD",
+             "MOHAMAD": "MUHAMMAD", "MOHAMMAD": "MUHAMMAD"}
+
+
+def kata_nama(nama):
+    bersih = re.sub(r"[^A-Z ]", " ", nama.upper())
+    return [SINGKATAN.get(k, k) for k in bersih.split() if k]
+
+
+def nama_serupa(a, b):
+    """Dua nama dianggap orang yang sama kalau cuma beda ejaan/singkatan."""
+    ka, kb = kata_nama(a), kata_nama(b)
+    if ka == kb:
+        return True
+    n = min(len(ka), len(kb))
+    if n and ka[:n] == kb[:n]:                       # SHENDY ~ SHENDY FEBRIAN
+        return True
+    if difflib.SequenceMatcher(None, " ".join(ka), " ".join(kb)).ratio() >= 0.8:
+        return True
+    if len(ka) == len(kb):                           # TEDI SAPUTRA ~ TEDI SUPRIADI
+        mirip = sum(1 for x, y in zip(ka, kb)
+                    if difflib.SequenceMatcher(None, x, y).ratio() >= 0.6)
+        return mirip == len(ka)
+    return False
+
+
+def kunci(r):
+    """Satu orang = satu NIK. Kalau NIK rusak, pakai nama + KK (atau wilayah)."""
+    if len(r["nik"]) == 16:
+        return "nik:" + r["nik"]
+    if len(r["kk"]) == 16:
+        return "nm:" + r["nama"] + "|" + r["kk"]
+    return "nm:" + r["nama"] + "|" + r["rt"] + "|" + r["rw"]
+
+
+def mutu(r):
+    """Makin kecil makin dipilih saat ada baris ganda."""
+    return (r["tambahan"], not r["kk"], not (USIA_MIN <= int(r["usia"] or 0) <= USIA_MAKS),
+            r["sheet"], r["rt"])
+
+
+def tulis_laporan(folder, bajakan):
+    """Laporan lokal (tidak ikut di-upload) supaya panitia bisa cek data ganda."""
+    if not bajakan:
+        return
+    try:
+        import openpyxl
+    except ImportError:
+        return
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Perlu dicek"
+    ws.append(["Status", "Nama", "NIK", "No. KK", "RT", "RW", "Sheet", "Keterangan"])
+    for jenis, *isi in bajakan:
+        if jenis == "nik-dobel":
+            kantong = isi[0]
+            wakil = kantong[0][1][0]
+            ws.append(["NIK dipakai >1 nama",
+                       " | ".join(f"{b[1][0]['nama']} (RT {b[1][0]['rt']})" for b in kantong),
+                       wakil["nik"], wakil["kk"], wakil["rt"], wakil["rw"], wakil["sheet"],
+                       "salah ketik NIK? cek KTP"])
+        else:
+            simpan, buang = isi
+            ws.append(["baris ganda (tidak ditampilkan)", buang["nama"], buang["nik"], buang["kk"],
+                       buang["rt"], buang["rw"], buang["sheet"],
+                       f"sama dengan {simpan['nama']} (RT {simpan['rt']}, {simpan['sheet']})"])
+    for kolom, lebar in zip("ABCDEFGH", (26, 40, 18, 18, 6, 6, 16, 42)):
+        ws.column_dimensions[kolom].width = lebar
+    wb.save(os.path.join(folder, "laporan-ganda.xlsx"))
+
 
 def main():
-    if len(sys.argv) < 2: sys.exit(__doc__)
-    salt = secrets.token_hex(12); rows = []; kk_cache = {}; lewat = 0
-    for r in baca(sys.argv[1]):
-        nama = str(r.get("nama") or "").strip(); nik = digit(r.get("nik")); kk = digit(r.get("kk"))
-        if not nama or len(nik) != 16 or len(kk) != 16:
-            lewat += 1; continue
-        if kk not in kk_cache: kk_cache[kk] = hsh(salt, "kk", kk)
-        rows.append({"n": nama, "nk": samar(nik), "kk": samar(kk), "hn": hsh(salt, "nik", nik), "hk": kk_cache[kk],
-                     "u": digit(r.get("usia")), "rt": pad(r.get("rt")), "rw": pad(r.get("rw")), "t": str(r.get("tps") or "").strip()})
-    with open("data.json", "w", encoding="utf-8") as f:
-        json.dump({"salt": salt, "iter": ITER, "rows": rows}, f, ensure_ascii=False, separators=(",", ":"))
-    print(f"Selesai: {len(rows)} pemilih, {len(kk_cache)} KK, {lewat} dilewati -> data.json")
-main()
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    src = sys.argv[1]
+    mentah = baca_xlsx(src) if src.lower().endswith((".xlsx", ".xlsm")) else baca_csv(src)
+
+    # satu NIK bisa saja dipakai dua orang berbeda (salah input). Baris seperti
+    # itu JANGAN digabung, cukup dicatat di laporan untuk dicek panitia.
+    kelompok = defaultdict(list)
+    for r in mentah:
+        kelompok[kunci(r)].append(r)
+    bajakan = []                                     # catatan untuk laporan lokal
+    hasil_kelompok = []
+    dobel_nik = set()                                # NIK yang dipakai lebih dari satu nama
+    for grup in kelompok.values():
+        if len(grup) == 1:
+            hasil_kelompok.append(grup)
+            continue
+        kantong = []                                 # daftar (nama wakil, [baris])
+        for r in sorted(grup, key=mutu):
+            for wakil, isi in kantong:
+                if nama_serupa(wakil, r["nama"]):
+                    isi.append(r)
+                    break
+            else:
+                kantong.append((r["nama"], [r]))
+        for wakil, isi in kantong:
+            hasil_kelompok.append(isi)
+            for r in isi[1:]:
+                bajakan.append(("ganda", isi[0], r))
+        if len(kantong) > 1:
+            dobel_nik.add(grup[0]["nik"])
+            bajakan.append(("nik-dobel", kantong))
+
+    rows = [sorted(grup, key=mutu)[0] for grup in hasil_kelompok]
+    ganda = len(mentah) - len(rows)
+
+    # buang baris tanpa wilayah sama sekali
+    rows = [r for r in rows if r["rw"]]
+    rows.sort(key=lambda r: (r["rw"], r["rt"], r["nama"]))
+
+    salt = secrets.token_hex(12)
+    unik_nik = sorted({r["nik"] for r in rows if len(r["nik"]) == 16})
+    unik_kk = sorted({r["kk"] for r in rows if len(r["kk"]) == 16})
+    pekerjaan = [(salt, "nik", v) for v in unik_nik] + [(salt, "kk", v) for v in unik_kk]
+    with ProcessPoolExecutor() as pool:
+        hasil = list(pool.map(_hash, pekerjaan, chunksize=64))
+    hnik = dict(zip(unik_nik, hasil[: len(unik_nik)]))
+    hkk = dict(zip(unik_kk, hasil[len(unik_nik):]))
+
+    keluaran = []
+    for r in rows:
+        keluaran.append([
+            judul(r["nama"]),
+            samar(r["nik"]),
+            samar(r["kk"]),
+            hnik.get(r["nik"], ""),
+            hkk.get(r["kk"], ""),
+            r["usia"],
+            r["jk"] if r["jk"] in ("L", "P") else "",
+            r["rt"],
+            r["rw"],
+        ])
+
+    per_rw = Counter(r["rw"] for r in rows)
+    per_rt = Counter(r["rw"] + "/" + r["rt"] for r in rows if r["rt"])
+    data = {
+        "meta": {
+            "desa": "Desa Kasomalang Kulon",
+            "kecamatan": "Kasomalang",
+            "kabupaten": "Subang",
+            "tahun": 2026,
+            "sumber": os.path.basename(src),
+            "dibuat": __import__("datetime").date.today().isoformat(),
+            "salt": salt,
+            "iter": ITER,
+            "jumlah": len(rows),
+            "baris": len(mentah),
+            "ganda": ganda,
+            "nikDobel": len(dobel_nik),
+            "kk": len(unik_kk),
+            "pria": sum(1 for r in rows if r["jk"] == "L"),
+            "wanita": sum(1 for r in rows if r["jk"] == "P"),
+            "perRw": dict(sorted(per_rw.items())),
+            "perRt": dict(sorted(per_rt.items())),
+        },
+        "rows": keluaran,
+    }
+
+    tujuan = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.json")
+    with open(tujuan, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+
+    tulis_laporan(os.path.dirname(os.path.abspath(__file__)), bajakan)
+
+    print(f"Baris dibaca     : {len(mentah)}")
+    print(f"  dari sheet RW  : {sum(1 for r in mentah if not r['tambahan'])}")
+    print(f"  dari TAMBAHAN  : {sum(1 for r in mentah if r['tambahan'])}")
+    print(f"Pemilih unik     : {len(rows)}  ({ganda} baris ganda dibuang)")
+    print(f"Kartu Keluarga   : {len(unik_kk)}")
+    print(f"NIK tidak valid  : {sum(1 for r in rows if len(r['nik']) != 16)}")
+    print(f"Tanpa No. KK     : {sum(1 for r in rows if len(r['kk']) != 16)}")
+    print(f"Usia di luar {USIA_MIN}-{USIA_MAKS} : {sum(1 for r in rows if r['usia'] and not (USIA_MIN <= int(r['usia']) <= USIA_MAKS))}")
+    print(f"L / P            : {data['meta']['pria']} / {data['meta']['wanita']}")
+    print("Per RW           : " + ", ".join(f"{k}={v}" for k, v in sorted(per_rw.items())))
+    print(f"Ukuran data.json : {os.path.getsize(tujuan) / 1024:.0f} KB -> {tujuan}")
+
+
+if __name__ == "__main__":
+    main()

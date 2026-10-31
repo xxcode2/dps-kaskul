@@ -4,236 +4,201 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#6f1821">
-<title>Cek DPS Pilkades</title>
+<meta name="theme-color" content="#5B1018">
+<meta name="color-scheme" content="light">
+<meta name="description" content="Cek nama dalam Daftar Pemilih Sementara (DPS) Pemilihan Kepala Desa Kasomalang Kulon 2026.">
+<title>Cek DPS Pilkades · Desa Kasomalang Kulon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{--tinta:#6f1821;--tinta2:#9a2631;--noda:#c6323c;--merah:#c32632;--hijau:#17724d;--bg:#f7eeee;--kertas:#fff;--teks:#2c1719;--abu:#746366;--garis:#e7d7d8}
-*{box-sizing:border-box;margin:0}
-html{-webkit-text-size-adjust:100%}
-body{font:16px/1.5 "Public Sans",system-ui,sans-serif;background:var(--bg);color:var(--teks);min-height:100vh}
-h1,h2,h3{font-family:"Bricolage Grotesque","Public Sans",system-ui,sans-serif;line-height:1.15}
-.hero{position:relative;overflow:hidden;background:var(--tinta);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 28px) 22px 70px}
-.hero svg.jari{position:absolute;right:-40px;top:-30px;width:210px;opacity:.9;transform:rotate(14deg)}
-.hero p.desa{font-weight:600;color:#f1c6c9;font-size:15px;max-width:60%}
-.hero h1{font-size:clamp(2.1rem,9vw,3rem);font-weight:800;margin:14px 0 10px;max-width:11ch}
-.hero p.sub{color:#f4dadd;max-width:34ch;font-size:15px}
-.total{display:inline-block;margin-top:18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:6px 14px;font-size:14px}
-.hero::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:34px;background:var(--bg);clip-path:ellipse(60% 100% at 50% 100%)}
-main{max-width:560px;margin:-26px auto 0;padding:0 16px 40px;position:relative;z-index:2}
-.card{background:var(--kertas);border-radius:18px;padding:18px;box-shadow:0 10px 30px -12px rgba(111,24,33,.24)}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--bg);padding:4px;border-radius:12px;margin-bottom:14px}
-.tabs button{border:0;background:none;padding:10px 2px;border-radius:9px;font:600 13.5px "Public Sans",sans-serif;color:var(--abu);cursor:pointer}
-.tabs button[aria-selected=true]{background:var(--tinta);color:#fff}
-label{font-weight:600;font-size:14px;display:block;margin-bottom:6px}
-.row{display:flex;gap:8px}
-input{flex:1;min-width:0;border:2px solid var(--garis);border-radius:12px;padding:13px 14px;font:500 17px "Public Sans",sans-serif;color:var(--teks);background:#fff}
-input:focus{outline:3px solid #f1c8cc;border-color:var(--noda)}
-.go{border:0;border-radius:12px;background:var(--merah);color:#fff;font:700 16px "Public Sans",sans-serif;padding:0 18px;cursor:pointer}
-.go:active{transform:scale(.97)}
-.go:focus-visible,.tabs button:focus-visible,.fam:focus-visible{outline:3px solid #f1c8cc;outline-offset:2px}
-.hint{font-size:13px;color:var(--abu);margin-top:9px}
-#out{margin-top:18px;display:grid;gap:12px}
-.ringkas{font-weight:600;color:var(--tinta)}
-.tiket{position:relative;background:radial-gradient(circle 8px at 63px 0,var(--bg) 97%,#0000) top/100% 51% no-repeat,radial-gradient(circle 8px at 63px 100%,var(--bg) 97%,#0000) bottom/100% 51% no-repeat,var(--kertas);border-radius:14px;padding:14px 14px 14px 76px;box-shadow:0 6px 18px -10px rgba(111,24,33,.26);animation:muncul .35s ease both}
-.tiket::before{content:"";position:absolute;left:62px;top:10px;bottom:10px;border-left:2px dashed var(--garis)}
-
-.coblos{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:var(--tinta);color:#fff;display:grid;place-items:center;font:800 17px "Bricolage Grotesque",sans-serif}
-.coblos.utama{background:var(--hijau)}
-.tiket h3{font-size:18px;font-weight:700;margin-bottom:3px;overflow-wrap:anywhere}
-.no{font:500 13px ui-monospace,Menlo,monospace;color:var(--abu);letter-spacing:.02em}
-.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.tags span{font-size:12.5px;font-weight:600;background:#fae8e9;color:var(--tinta2);border-radius:99px;padding:2px 10px}
-.tags span.ok{background:#dff4ea;color:var(--hijau)}
-.kepala{background:var(--tinta);color:#fff;border-radius:14px;padding:16px;animation:muncul .35s ease both}
-.kepala h2{font-size:22px}
-.kepala p{color:#f4dadd;font-size:14px;margin-top:4px}
-.fam{border:2px solid var(--tinta2);background:#fff;color:var(--tinta2);border-radius:12px;font:700 15px "Public Sans",sans-serif;padding:11px;cursor:pointer}
-.kosong{text-align:center;padding:26px 18px;animation:muncul .35s ease both}
-.kosong h3{font-size:19px;margin-bottom:6px}
-.kosong p{color:var(--abu);font-size:14.5px}
-.kosong a{display:inline-block;margin-top:12px;color:#fff;background:var(--hijau);padding:10px 16px;border-radius:12px;font-weight:700;text-decoration:none}
-.info{margin-top:22px;font-size:13.5px;color:var(--abu)}
-.info b{color:var(--tinta)}
-.info ul{padding-left:18px;margin-top:6px}
-footer{text-align:center;font-size:12.5px;color:var(--abu);padding:0 16px calc(env(safe-area-inset-bottom,0px) + 24px)}
-[hidden]{display:none!important}
-.wil{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.wil .cr{grid-column:1/-1}.wil .cr input{width:100%;font-size:16px}
-select{width:100%;border:2px solid var(--garis);border-radius:12px;padding:12px;font:500 16px "Public Sans",sans-serif;background:#fff;color:var(--teks)}
-select:focus{outline:3px solid #f1c8cc;border-color:var(--noda)}
-select:disabled,.wil input:disabled{opacity:.5}
-details summary{font-weight:700;color:var(--tinta);cursor:pointer;padding:2px 0}
-details[open] summary{margin-bottom:14px}
-.tabs.dua{grid-template-columns:repeat(2,1fr)}
-.jd{font-size:21px;font-weight:800;color:var(--tinta)}
-.filter{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 4px}
-.filter input{grid-column:1/-1;width:100%;font-size:16px}
-.daf{display:grid;gap:12px;margin-top:12px}
-.pg{margin-top:18px;display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:stretch}
-.pg select{width:auto;padding:10px 8px;font-size:14px;font-weight:600}
-.fam:disabled{opacity:.35;cursor:default}
-#daftar{scroll-margin-top:12px}
-#fout{display:grid;gap:12px;margin-top:14px}
-@keyframes muncul{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){*{animation:none!important}}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
 <header class="hero">
-  <svg class="jari" viewBox="0 0 200 260" aria-hidden="true"><path d="M100 4c40 0 66 34 66 86v78c0 50-24 88-66 88s-66-38-66-88V90C34 38 60 4 100 4z" fill="#a62631"/><path d="M100 4c40 0 66 34 66 86v28H34V90C34 38 60 4 100 4z" fill="#cf4b55"/><path d="M62 60c4-22 20-36 38-36" stroke="#f5c7cb" stroke-width="8" stroke-linecap="round" fill="none"/></svg>
-  <p class="desa" id="desa"></p>
-  <h1 id="judul">Cek namamu di DPS</h1>
-  <p class="sub">Pastikan kamu dan keluargamu sudah terdaftar sebagai pemilih.</p>
-  <span class="total" id="total" hidden></span>
+  <div class="hero-deco" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span></div>
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <p class="kicker"><span class="pulse"></span> Pilkades 2026 &middot; Daftar Pemilih Sementara</p>
+      <p class="desa">Desa Kasomalang Kulon <span>&middot;</span> Kec. Kasomalang, Subang</p>
+      <h1>Cek namamu<br><span>di DPS</span></h1>
+      <p class="lede">Satu menit untuk memastikan namamu dan keluargamu sudah tercatat sebagai pemilih Pemilihan Kepala Desa.</p>
+      <dl class="stats">
+        <div><dd id="st-pemilih">—</dd><dt>Pemilih</dt></div>
+        <div><dd id="st-kk">—</dd><dt>Kartu Keluarga</dt></div>
+        <div><dd id="st-rw">—</dd><dt>Rukun Warga</dt></div>
+      </dl>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 240 220" role="presentation">
+        <defs>
+          <linearGradient id="gBox" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#FBEDEA"/><stop offset="1" stop-color="#DCA9AC"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring r1" cx="120" cy="112" r="98" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="1.5" stroke-dasharray="3 11"/>
+        <circle class="ring r2" cx="120" cy="112" r="76" fill="none" stroke="rgba(228,177,84,.38)" stroke-width="1.5" stroke-dasharray="2 15"/>
+        <g class="paper">
+          <rect x="86" y="46" width="68" height="88" rx="10" fill="#fff"/>
+          <rect x="99" y="62" width="42" height="6" rx="3" fill="#EBD6D3"/>
+          <rect x="99" y="76" width="30" height="6" rx="3" fill="#EBD6D3"/>
+          <path class="tick" d="M103 104l9 9 17-19" fill="none" stroke="#127A55" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        <rect x="58" y="116" width="124" height="78" rx="16" fill="url(#gBox)"/>
+        <rect x="58" y="116" width="124" height="78" rx="16" fill="none" stroke="rgba(91,16,24,.18)" stroke-width="1.5"/>
+        <rect x="46" y="102" width="148" height="30" rx="13" fill="#FCEFEB"/>
+        <rect x="94" y="111" width="52" height="11" rx="5.5" fill="#5B1018"/>
+        <text x="120" y="178" text-anchor="middle" font-family="Plus Jakarta Sans, sans-serif" font-size="12" font-weight="800" fill="#5B1018" letter-spacing="1.6">DPS 2026</text>
+      </svg>
+    </div>
+  </div>
 </header>
 
-<main>
-  <section class="card">
-    <details id="kel">
-      <summary>Cek keluarga lewat NIK atau No. KK</summary>
-      <div class="tabs dua" role="tablist" aria-label="Cari berdasarkan">
-        <button role="tab" data-m="nik" aria-selected="true">NIK</button>
-        <button role="tab" data-m="kk" aria-selected="false">No. KK</button>
+<main class="page">
+  <div class="col-side">
+    <section class="dock" id="dock" aria-label="Pencarian">
+      <div class="search">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+        <input id="q" type="search" placeholder="Ketik nama lengkap…" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="search" aria-label="Cari nama pemilih" aria-describedby="hasil-info">
+        <button class="clear" id="clear" type="button" aria-label="Hapus pencarian" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
       </div>
-      <form id="f" autocomplete="off">
-        <label for="q" id="lbl">NIK (16 digit)</label>
-        <div class="row">
-          <input id="q" type="text" inputmode="numeric" maxlength="16" enterkeyhint="search" placeholder="Masukkan 16 digit NIK">
-          <button class="go" type="submit">Cek</button>
+      <button class="nik-btn" id="open-cek" type="button">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5 16.2c.8-1.5 2-2.2 3.5-2.2s2.7.7 3.5 2.2M14.5 9.5H19M14.5 13H19"/></svg>
+        <span class="nik-label">NIK / KK</span>
+        <span class="nik-label-long">Cek NIK / No. KK</span>
+        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </section>
+
+    <section class="wilayah" aria-labelledby="wil-title">
+      <div class="wil-head">
+        <h2 id="wil-title">Pilih wilayah</h2>
+        <button class="reset" id="reset" type="button" hidden>Reset</button>
+      </div>
+      <div class="chips" id="rw-chips" role="group" aria-label="Filter RW"></div>
+      <div class="chips chips-rt" id="rt-chips" role="group" aria-label="Filter RT" hidden></div>
+    </section>
+
+    <aside class="side-note" aria-hidden="true">
+      <p><strong>Data aman.</strong> NIK dan No. KK ditampilkan sebagian. Nomor lengkap tidak pernah disimpan di halaman ini.</p>
+      <p class="note-meta" id="note-meta"></p>
+    </aside>
+  </div>
+
+  <div class="col-main">
+    <section class="list-wrap" aria-labelledby="list-title">
+      <div class="list-head">
+        <div>
+          <h2 id="list-title">Daftar pemilih</h2>
+          <p id="hasil-info" aria-live="polite">Memuat data…</p>
         </div>
-        <p class="hint" id="hint">Ketik NIK lengkap sesuai KTP.</p>
-      </form>
-      <div id="fout" aria-live="polite"></div>
-    </details>
-  </section>
+        <span class="badge-soft" id="filter-badge" hidden></span>
+      </div>
+      <div class="bar" aria-hidden="true"><i id="bar-fill"></i></div>
 
-  <section class="card" id="daftar" style="margin-top:14px">
-    <h2 class="jd">Daftar Pemilih Sementara</h2>
-    <div class="filter">
-      <input id="cn" type="search" placeholder="Cari nama" aria-label="Cari nama">
-      <select id="rw" aria-label="Filter RW"><option value="">Semua RW</option></select>
-      <select id="rt" aria-label="Filter RT"><option value="">Semua RT</option></select>
-    </div>
-    <div id="out" aria-live="polite"><p class="hint">Memuat data…</p></div>
-    <nav class="pg" id="pg" aria-label="Halaman" hidden></nav>
-  </section>
+      <ul class="list" id="list"></ul>
 
-  <section class="info">
-    <b>Tentang data ini</b>
-    <ul>
-      <li>Daftar nama bisa dilihat semua orang. NIK dan No. KK hanya tampil sebagian, sisanya disamarkan.</li>
-      <li>Untuk detail anggota keluarga, gunakan menu cek lewat NIK atau No. KK lengkap.</li>
-      <li>Data salah atau belum terdaftar? Sampaikan ke panitia sebelum masa perbaikan DPS berakhir.</li>
-    </ul>
-  </section>
+      <div class="empty" id="empty" hidden>
+        <div class="empty-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+        </div>
+        <h3 id="empty-title">Nama tidak ditemukan</h3>
+        <p id="empty-text">Coba ejaan lain, atau cek lewat NIK / No. KK.</p>
+        <button class="btn btn-ghost" type="button" data-open-cek>Buka cek NIK / No. KK</button>
+      </div>
+
+      <button class="more" id="more" type="button" hidden>
+        <span id="more-label">Muat lebih banyak</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+      </button>
+    </section>
+
+    <section class="info-card" aria-labelledby="info-title">
+      <h2 id="info-title">Yang perlu diketahui</h2>
+
+      <details open>
+        <summary>Apa itu DPS?</summary>
+        <p>DPS atau Daftar Pemilih Sementara adalah daftar warga Desa Kasomalang Kulon yang berhak memilih pada Pemilihan Kepala Desa 2026. Daftar ini masih bisa diperbaiki sebelum ditetapkan menjadi Daftar Pemilih Tetap (DPT).</p>
+      </details>
+
+      <details>
+        <summary>Nama saya belum terdaftar, bagaimana?</summary>
+        <p>Sampaikan ke panitia di kantor desa dengan membawa KTP dan Kartu Keluarga, atau hubungi WhatsApp panitia. Selama masa perbaikan DPS masih berjalan, data masih bisa ditambahkan.</p>
+      </details>
+
+      <details>
+        <summary>Kenapa NIK dan No. KK disamarkan?</summary>
+        <p>Supaya data pribadi warga tidak bisa disalin sembarangan. Di halaman ini hanya beberapa digit yang tampil. Untuk melihat data lengkap, gunakan menu cek NIK / No. KK — nomor yang kamu masukkan hanya dicocokkan di perangkatmu sendiri.</p>
+      </details>
+
+      <details>
+        <summary>Kenapa jumlahnya berbeda dengan rekapan panitia?</summary>
+        <p>Berkas panitia berisi <b id="info-baris">—</b> baris (7 sheet RW + 7 sheet TAMBAHAN). Di dalamnya banyak warga tercatat lebih dari sekali — misalnya muncul di beberapa RT sekaligus — dan sheet TAMBAHAN mengulang hampir semua nama yang sudah ada. Setelah <b id="info-ganda">—</b> baris ganda dibuang, tersisa <span id="info-jumlah">—</span> pemilih. Tidak ada data yang dihapus permanen; hanya baris kembar yang tidak ditampilkan dua kali.</p>
+        <p id="info-dobel" hidden></p>
+      </details>
+
+      <details>
+        <summary>Kapan data ini diperbarui?</summary>
+        <p id="info-update">—</p>
+      </details>
+
+      <div class="info-foot">
+        <a class="btn btn-wa" id="wa-share" href="#" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 00-7.7 13.6L3 21l4.5-1.2A9 9 0 1012 3z"/><path d="M8.8 8.6c.2-.5.4-.5.7-.5h.5c.2 0 .4 0 .6.5l.7 1.6c.1.2 0 .4-.1.6l-.5.6c-.1.2-.2.3 0 .6.5.9 1.4 1.7 2.3 2.1.3.1.4.1.6-.1l.6-.7c.2-.2.3-.2.6-.1l1.6.8c.3.1.4.2.4.4 0 .2 0 .9-.4 1.4-.4.6-1.4 1-2 1-.7 0-1.9-.2-3.6-1.5-1.4-1.1-2.4-2.6-2.7-3.3-.4-.7-.9-1.9-.3-2.9z"/></svg>
+          Bagikan halaman ini
+        </a>
+        <button class="btn btn-ghost" id="copy-link" type="button">Salin tautan</button>
+      </div>
+    </section>
+  </div>
 </main>
-<footer id="foot"></footer>
 
-<script>
-const CFG={
-  desa:"Desa Kasomalang Kulon",
-  judul:"Cek namamu di DPS Pilkades",
-  panitia:"Panitia Pilkades Desa Kasomalang Kulon",
-  wa:"6281234567890",   // nomor WhatsApp panitia, format 62xxxx. Kosongkan "" untuk menyembunyikan tombol
-  perHalaman:20
-};
-const $=s=>document.querySelector(s);
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
-const cmp=(a,b)=>String(a).localeCompare(String(b),"id",{numeric:true});
-const uniq=a=>[...new Set(a)].filter(Boolean).sort(cmp);
-const opsi=(sel,arr,first)=>{sel.innerHTML=`<option value="">${first}</option>`+arr.map(v=>`<option>${esc(v)}</option>`).join("")};
-const FM={nik:{lbl:"NIK (16 digit)",ph:"Masukkan 16 digit NIK",hint:"Ketik NIK lengkap sesuai KTP."},
-          kk:{lbl:"Nomor KK (16 digit)",ph:"Masukkan 16 digit No. KK",hint:"Ketik No. KK lengkap untuk melihat seluruh anggota keluarga."}};
-let fm="nik",DB=null,rows=[],byNik=new Map(),byKk=new Map(),lis=[],page=1;
+<footer>
+  <p><strong>Panitia Pilkades Desa Kasomalang Kulon</strong></p>
+  <p class="small">Halaman ini dibuat untuk membantu warga mengecek DPS. Data mengikuti berkas panitia dan dapat berubah selama masa perbaikan.</p>
+</footer>
 
-document.title=CFG.judul;$("#judul").textContent=CFG.judul;$("#desa").textContent=CFG.desa;
-$("#foot").textContent="Dikelola oleh "+CFG.panitia;
+<button class="to-top" id="to-top" type="button" aria-label="Kembali ke atas" hidden>
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
 
-function msg(judul,isi,wa,t="#fout"){
-  $(t).innerHTML=`<div class="kosong"><h3>${esc(judul)}</h3><p>${esc(isi)}</p>${wa&&CFG.wa?`<a href="https://wa.me/${CFG.wa}?text=${encodeURIComponent("Halo panitia, saya ingin menanyakan data DPS saya.")}">Hubungi panitia</a>`:""}</div>`;
-}
-function tiket(r,utama,daf){
-  return `<article class="tiket"><div class="coblos ${utama?"utama":""}">${utama?"✓":esc(r.n.trim()[0]||"?").toUpperCase()}</div>
-  <h3>${esc(r.n)}</h3><p class="no">NIK ${esc(r.nk)}</p><p class="no">KK&nbsp; ${esc(r.kk)}</p>
-  <div class="tags">${daf?"":'<span class="ok">Terdaftar di DPS</span>'}<span>${r.u?`Usia ${esc(r.u)} tahun`:"Usia tidak tercantum"}</span>${r.rt||r.rw?`<span>RT ${esc(r.rt)}/RW ${esc(r.rw)}</span>`:""}${r.t?`<span>TPS ${esc(r.t)}</span>`:""}</div></article>`;
-}
+<dialog class="sheet" id="cek" aria-labelledby="cek-title">
+  <div class="sheet-in">
+    <div class="grab" aria-hidden="true"></div>
+    <header class="sheet-head">
+      <div>
+        <h2 id="cek-title">Cek data pribadi</h2>
+        <p>Masukkan NIK atau No. KK untuk melihat data kamu dan anggota keluarga.</p>
+      </div>
+      <button class="x" id="close-cek" type="button" aria-label="Tutup">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </header>
 
-/* ---------- Daftar + filter + pagination ---------- */
-fetch("data.json",{cache:"no-cache"}).then(r=>r.json()).then(d=>{
-  DB=d;rows=d.rows;
-  rows.forEach(r=>{r._n=norm(r.n);byNik.set(r.hn,r);(byKk.get(r.hk)||byKk.set(r.hk,[]).get(r.hk)).push(r)});
-  rows.sort((a,b)=>cmp(a.rw,b.rw)||cmp(a.rt,b.rt)||a.n.localeCompare(b.n,"id"));
-  opsi($("#rw"),uniq(rows.map(r=>r.rw)),"Semua RW");opsi($("#rt"),uniq(rows.map(r=>r.rt)),"Semua RT");
-  const t=$("#total");t.hidden=false;t.textContent=rows.length.toLocaleString("id-ID")+" pemilih terdaftar di DPS";
-  terapkan();
-}).catch(()=>{msg("Data belum bisa dimuat","Periksa koneksi internet lalu muat ulang halaman.",0,"#out")});
+    <div class="seg" role="tablist" aria-label="Cari berdasarkan">
+      <button role="tab" id="tab-nik" aria-selected="true" aria-controls="cek-form" data-mode="nik">NIK</button>
+      <button role="tab" id="tab-kk" aria-selected="false" aria-controls="cek-form" data-mode="kk">No. KK</button>
+    </div>
 
-function terapkan(){
-  const w=norm($("#cn").value).split(" ").filter(Boolean),rw=$("#rw").value,rt=$("#rt").value;
-  lis=rows.filter(r=>(!rw||r.rw===rw)&&(!rt||r.rt===rt)&&w.every(x=>r._n.includes(x)));
-  page=1;render(false);
-}
-function render(gulir){
-  const per=CFG.perHalaman,n=lis.length,hal=Math.max(1,Math.ceil(n/per)),sh=lis.slice((page-1)*per,page*per);
-  const rw=$("#rw").value,rt=$("#rt").value,ket=[rw&&"RW "+rw,rt&&"RT "+rt].filter(Boolean).join(", ");
-  $("#out").innerHTML=`<p class="ringkas">${n.toLocaleString("id-ID")} pemilih${ket?" di "+esc(ket):""}</p>`+
-    (n?`<div class="daf">${sh.map(r=>tiket(r,false,true)).join("")}</div>`:`<div class="kosong"><h3>Tidak ada hasil</h3><p>Ubah kata kunci atau filter RT/RW.</p></div>`);
-  const pg=$("#pg");pg.hidden=hal<=1;
-  pg.innerHTML=`<button class="fam" id="pv" ${page<=1?"disabled":""}>Sebelumnya</button>
-    <select id="pj" aria-label="Pilih halaman">${Array.from({length:hal},(_,i)=>`<option value="${i+1}" ${i+1===page?"selected":""}>Hal ${i+1} / ${hal}</option>`).join("")}</select>
-    <button class="fam" id="nx" ${page>=hal?"disabled":""}>Berikutnya</button>`;
-  $("#pv").onclick=()=>buka(page-1);$("#nx").onclick=()=>buka(page+1);$("#pj").onchange=e=>buka(+e.target.value);
-  if(gulir)$("#daftar").scrollIntoView({block:"start"});
-}
-function buka(p){page=p;render(true)}
-$("#cn").addEventListener("input",terapkan);
-$("#rt").addEventListener("change",terapkan);
-$("#rw").addEventListener("change",()=>{
-  const rw=$("#rw").value;
-  opsi($("#rt"),uniq(rows.filter(r=>!rw||r.rw===rw).map(r=>r.rt)),"Semua RT");terapkan();
-});
+    <form id="cek-form" novalidate>
+      <label for="nomor" id="nomor-label">NIK (16 digit)</label>
+      <input id="nomor" type="text" inputmode="numeric" autocomplete="off" maxlength="19" placeholder="3213 2604 0403 0001" aria-describedby="cek-hint">
+      <p class="hint" id="cek-hint">Ketik 16 digit sesuai KTP. Spasi otomatis ditambahkan.</p>
+      <button class="btn btn-primary btn-block" id="cek-submit" type="submit">
+        <span class="spinner" aria-hidden="true"></span>
+        <span class="lbl">Cek data</span>
+      </button>
+    </form>
 
-/* ---------- Cek keluarga lewat NIK / KK ---------- */
-document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
-  fm=b.dataset.m;
-  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x===b));
-  const m=FM[fm],q=$("#q");$("#lbl").textContent=m.lbl;q.placeholder=m.ph;$("#hint").textContent=m.hint;
-  q.value="";$("#fout").innerHTML="";q.focus();
-});
-$("#q").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"")});
-async function hash(kind,val){
-  const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(kind+":"+val),"PBKDF2",false,["deriveBits"]);
-  const bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:new TextEncoder().encode(DB.salt),iterations:DB.iter,hash:"SHA-256"},k,256);
-  return [...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,"0")).join("");
-}
-function keluarga(l){
-  $("#fout").innerHTML=`<div class="kepala"><h2>${l.length} anggota keluarga</h2><p>KK ${esc(l[0].kk)} terdaftar di DPS</p></div>`+l.map(r=>tiket(r,false,true)).join("");
-}
-$("#f").addEventListener("submit",async e=>{
-  e.preventDefault();
-  if(!DB)return msg("Data masih dimuat","Tunggu sebentar lalu coba lagi.");
-  const v=$("#q").value.trim(),out=$("#fout");
-  if(v.length!==16)return msg("Nomor belum lengkap","Masukkan tepat 16 digit.");
-  const btn=$(".go");btn.disabled=true;btn.textContent="…";
-  try{
-    const h=await hash(fm,v);
-    if(fm==="nik"){
-      const r=byNik.get(h);
-      if(!r)return msg("NIK tidak ditemukan di DPS","Periksa kembali angkanya. Jika sudah benar, hubungi panitia.",1);
-      const n=byKk.get(r.hk).length;
-      out.innerHTML=tiket(r,true,false)+(n>1?`<button class="fam" id="bf">Lihat ${n} anggota keluarga</button>`:"");
-      const bf=$("#bf");if(bf)bf.onclick=()=>keluarga(byKk.get(r.hk));
-    }else{
-      const l=byKk.get(h);
-      if(!l)return msg("No. KK tidak ditemukan di DPS","Periksa kembali angkanya. Jika sudah benar, hubungi panitia.",1);
-      keluarga(l);
-    }
-  }finally{btn.disabled=false;btn.textContent="Cek"}
-});
-</script>
+    <div class="cek-out" id="cek-out" aria-live="polite"></div>
+    <p class="privacy">Nomor yang kamu ketik hanya dicocokkan di perangkat ini dan tidak dikirim ke server.</p>
+  </div>
+</dialog>
+
+<noscript><p class="noscript">Halaman ini butuh JavaScript untuk menampilkan daftar pemilih.</p></noscript>
+
+<script src="app.js"></script>
 </body>
 </html>
