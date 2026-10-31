@@ -27,8 +27,8 @@ cukup tiga berkas: `index.html`, `styles.css`, `app.js`, dan satu `data.json`.
 
    Skrip akan merapikan RT/RW, membuang baris ganda, menyamarkan NIK/KK,
    lalu menulis `data.json` baru dan `laporan-duplikat-<jumlah>.xlsx` untuk
-   pemeriksaan lokal. Laporan berisi nama dan wilayah, tanpa NIK/KK (sekitar
-   3 menit karena sidik jari PBKDF2).
+   pemeriksaan lokal. Laporan berisi nama, wilayah, dan status kecocokan NIK/KK
+   tanpa mencantumkan nomornya (sekitar 3 menit karena sidik jari PBKDF2).
 3. Buka `index.html` lewat server lokal untuk memeriksa hasilnya:
 
    ```bash

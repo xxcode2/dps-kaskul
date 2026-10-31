@@ -198,7 +198,8 @@ def tulis_laporan(folder, bajakan):
     ws.append([
         "No.", "Nama baris duplikat", "RW duplikat", "RT duplikat",
         "Sheet duplikat", "Nama acuan (dipertahankan)", "RW acuan",
-        "RT acuan", "Sheet acuan", "Dasar penggabungan",
+        "RT acuan", "Sheet acuan", "Status NIK", "Status No. KK",
+        "Dasar penggabungan",
     ])
     nomor = 0
     for jenis, *isi in bajakan:
@@ -206,19 +207,26 @@ def tulis_laporan(folder, bajakan):
             continue
         simpan, buang = isi
         nomor += 1
-        if len(buang["nik"]) == 16:
+        nik_sama = len(simpan["nik"]) == len(buang["nik"]) == 16 and simpan["nik"] == buang["nik"]
+        kk_sama = len(simpan["kk"]) == len(buang["kk"]) == 16 and simpan["kk"] == buang["kk"]
+        status_nik = ("Sama" if nik_sama else "Berbeda" if len(simpan["nik"]) == len(buang["nik"]) == 16
+                      else "Tidak lengkap")
+        status_kk = ("Sama" if kk_sama else "Berbeda" if len(simpan["kk"]) == len(buang["kk"]) == 16
+                     else "Tidak lengkap")
+        if nik_sama:
             dasar = "NIK sama; nama cocok menurut aturan konverter"
-        elif len(buang["kk"]) == 16:
+        elif kk_sama:
             dasar = "Nama dan No. KK sama; NIK tidak lengkap"
         else:
             dasar = "Nama dan RT/RW sama; NIK dan No. KK tidak lengkap"
         ws.append([
             nomor, judul(buang["nama"]), buang["rw"], buang["rt"], buang["sheet"],
-            judul(simpan["nama"]), simpan["rw"], simpan["rt"], simpan["sheet"], dasar,
+            judul(simpan["nama"]), simpan["rw"], simpan["rt"], simpan["sheet"],
+            status_nik, status_kk, dasar,
         ])
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
-    for kolom, lebar in zip("ABCDEFGHIJ", (7, 32, 12, 12, 22, 32, 12, 12, 22, 54)):
+    for kolom, lebar in zip("ABCDEFGHIJKL", (7, 32, 12, 12, 22, 32, 12, 12, 22, 18, 18, 54)):
         ws.column_dimensions[kolom].width = lebar
 
     konflik = wb.create_sheet("NIK beda nama")
