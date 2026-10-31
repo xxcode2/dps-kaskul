@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Ubah data DPS (XLSX/CSV) menjadi data.json yang aman dipublikasikan.
 
-Semua sheet yang punya kolom NAMA + NIK akan digabung. Sheet rekap
-(contoh: "Sheet1") otomatis dilewati.
+Semua sheet yang terlihat dan punya kolom NAMA + NIK akan digabung. Sheet
+tersembunyi dan sheet rekap (contoh: "Sheet1") otomatis dilewati.
 
 Pakai:
     python convert.py "DAFTAR PEMILIH SEMENTARA (2).xlsx"
@@ -10,7 +10,7 @@ Pakai:
 Butuh: pip install openpyxl   (hanya untuk XLSX)
 
 Yang dilakukan skrip ini:
-  * menyatukan semua sheet RW + sheet TAMBAHAN
+  * membaca sheet yang terlihat dan melewati sheet tersembunyi
   * merapikan RT/RW jadi 3 digit dan menebak RW dari nama sheet
   * membuang baris ganda (satu NIK = satu pemilih)
   * menyamarkan NIK / No. KK (hanya sebagian digit yang tampil)
@@ -91,6 +91,8 @@ def baca_xlsx(path):
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     baris = []
     for sheet in wb.worksheets:
+        if sheet.sheet_state != "visible":
+            continue
         kepala = None
         for i, r in enumerate(sheet.iter_rows(values_only=True), start=1):
             sel = [teks(c) for c in r]

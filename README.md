@@ -16,7 +16,8 @@ cukup tiga berkas: `index.html`, `styles.css`, `app.js`, dan satu `data.json`.
 
 1. Siapkan berkas DPS (`.xlsx` atau `.csv`). Kolom yang dibaca: `NAMA`, `NIK`,
    `KK`, `JENIS KELAMIN`, `USIA`, `RT`, `RW`. Huruf besar/kecil dan urutan kolom
-   bebas, semua sheet dengan kolom NAMA + NIK otomatis digabung.
+   bebas, semua sheet yang terlihat dengan kolom NAMA + NIK otomatis digabung;
+   sheet tersembunyi dan sheet rekap dilewati.
 2. Jalankan:
 
    ```bash
@@ -51,7 +52,7 @@ Ganti `wa` dengan nomor WhatsApp panitia yang sebenarnya.
 ## Catatan data
 
 - Satu NIK = satu baris. Baris yang tercatat ganda (misalnya muncul di RT
-  berbeda atau di sheet TAMBAHAN) otomatis digabung, jadi jumlah di halaman ini
+  berbeda atau di sheet berbeda) otomatis digabung, jadi jumlah di halaman ini
   bisa lebih kecil daripada rekapan mentah panitia.
 - Sebagian baris di berkas sumber belum punya NIK lengkap. Baris seperti itu
   tetap tampil di daftar, tetapi tidak bisa dicek lewat NIK.
