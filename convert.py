@@ -185,7 +185,7 @@ def mutu(r):
 
 
 def tulis_laporan(folder, bajakan):
-    """Laporan lokal (tidak ikut di-upload) supaya panitia bisa cek data ganda."""
+    """Laporan lokal tanpa NIK/KK mentah supaya panitia bisa cek data ganda."""
     if not bajakan:
         return
     try:
@@ -194,24 +194,53 @@ def tulis_laporan(folder, bajakan):
         return
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Perlu dicek"
-    ws.append(["Status", "Nama", "NIK", "No. KK", "RT", "RW", "Sheet", "Keterangan"])
+    ws.title = "Duplikat"
+    ws.append([
+        "No.", "Nama baris duplikat", "RW duplikat", "RT duplikat",
+        "Sheet duplikat", "Nama acuan (dipertahankan)", "RW acuan",
+        "RT acuan", "Sheet acuan", "Dasar penggabungan",
+    ])
+    nomor = 0
     for jenis, *isi in bajakan:
-        if jenis == "nik-dobel":
-            kantong = isi[0]
-            wakil = kantong[0][1][0]
-            ws.append(["NIK dipakai >1 nama",
-                       " | ".join(f"{b[1][0]['nama']} (RT {b[1][0]['rt']})" for b in kantong),
-                       wakil["nik"], wakil["kk"], wakil["rt"], wakil["rw"], wakil["sheet"],
-                       "salah ketik NIK? cek KTP"])
+        if jenis != "ganda":
+            continue
+        simpan, buang = isi
+        nomor += 1
+        if len(buang["nik"]) == 16:
+            dasar = "NIK sama; nama cocok menurut aturan konverter"
+        elif len(buang["kk"]) == 16:
+            dasar = "Nama dan No. KK sama; NIK tidak lengkap"
         else:
-            simpan, buang = isi
-            ws.append(["baris ganda (tidak ditampilkan)", buang["nama"], buang["nik"], buang["kk"],
-                       buang["rt"], buang["rw"], buang["sheet"],
-                       f"sama dengan {simpan['nama']} (RT {simpan['rt']}, {simpan['sheet']})"])
-    for kolom, lebar in zip("ABCDEFGH", (26, 40, 18, 18, 6, 6, 16, 42)):
+            dasar = "Nama dan RT/RW sama; NIK dan No. KK tidak lengkap"
+        ws.append([
+            nomor, judul(buang["nama"]), buang["rw"], buang["rt"], buang["sheet"],
+            judul(simpan["nama"]), simpan["rw"], simpan["rt"], simpan["sheet"], dasar,
+        ])
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = ws.dimensions
+    for kolom, lebar in zip("ABCDEFGHIJ", (7, 32, 12, 12, 22, 32, 12, 12, 22, 54)):
         ws.column_dimensions[kolom].width = lebar
-    wb.save(os.path.join(folder, "laporan-ganda.xlsx"))
+
+    konflik = wb.create_sheet("NIK beda nama")
+    konflik.append(["Nama dan lokasi", "Jumlah nama berbeda", "Catatan"])
+    for jenis, *isi in bajakan:
+        if jenis != "nik-dobel":
+            continue
+        kantong = isi[0]
+        rincian = []
+        for _, daftar in kantong:
+            r = daftar[0]
+            rincian.append(f"{judul(r['nama'])} — RW {r['rw']}, RT {r['rt']} ({r['sheet']})")
+        konflik.append([
+            " | ".join(rincian), len(kantong),
+            "Periksa dokumen sumber; nomor identitas tidak dicantumkan dalam laporan.",
+        ])
+    konflik.freeze_panes = "A2"
+    konflik.auto_filter.ref = konflik.dimensions
+    for kolom, lebar in zip("ABC", (100, 24, 72)):
+        konflik.column_dimensions[kolom].width = lebar
+
+    wb.save(os.path.join(folder, f"laporan-duplikat-{nomor}.xlsx"))
 
 
 def main():
