@@ -16,27 +16,33 @@ cukup tiga berkas: `index.html`, `styles.css`, `app.js`, dan satu `data.json`.
 
 1. Siapkan berkas DPS (`.xlsx` atau `.csv`). Kolom yang dibaca: `NAMA`, `NIK`,
    `KK`, `JENIS KELAMIN`, `USIA`, `RT`, `RW`. Huruf besar/kecil dan urutan kolom
-   bebas, semua sheet yang terlihat dengan kolom NAMA + NIK otomatis digabung;
-   sheet tersembunyi dan sheet rekap dilewati.
+   bebas. Semua sheet RW yang punya kolom NAMA + NIK otomatis digabung, begitu
+   juga sheet `TAMBAHAN` (boleh berstatus tersembunyi) yang dipakai sebagai
+   cadangan; sheet rekap seperti `Sheet1` dan sheet tersembunyi lain dilewati.
 2. Jalankan:
 
    ```bash
    pip install openpyxl
-   python convert.py "DAFTAR PEMILIH SEMENTARA (2).xlsx"
+   python convert.py "DAFTAR PEMILIH SEMENTARA (3).xlsx"
    ```
 
    Skrip akan merapikan RT/RW, membuang baris ganda, menyamarkan NIK/KK,
    lalu menulis `data.json` baru dan `laporan-duplikat-<jumlah>.xlsx` untuk
-   pemeriksaan lokal. Laporan berisi nama, wilayah, dan status kecocokan NIK/KK
-   tanpa mencantumkan nomornya (sekitar 3 menit karena sidik jari PBKDF2).
+   pemeriksaan lokal. Laporan berisi tiga sheet: **Duplikat** (baris kembar yang
+   dibuang beserta nama acuannya), **NIK perlu dicek** (satu NIK untuk beberapa
+   nama, dan nama + RW sama tapi NIK berbeda), serta **Usia perlu dicek** (usia
+   di berkas beda >1 tahun dengan tanggal lahir yang tersandi di NIK). Semua
+   masih memakai nama dan wilayah, tanpa NIK/KK utuh (sekitar 3 menit karena
+   sidik jari PBKDF2).
 3. Buka `index.html` lewat server lokal untuk memeriksa hasilnya:
 
    ```bash
    python -m http.server 8765
    ```
 
-**Jangan unggah berkas XLSX/CSV ke hosting.** Hanya `data.json` yang perlu ikut
-ter-deploy; `.gitignore` dan `.vercelignore` sudah menolak berkas sumber.
+**Jangan unggah berkas XLSX/CSV atau berkas laporan ke hosting.** Hanya
+`data.json` yang perlu ikut ter-deploy; `.gitignore` dan `.vercelignore` sudah
+menolak berkas sumber.
 
 ## Pengaturan kecil
 
@@ -59,6 +65,9 @@ Ganti `wa` dengan nomor WhatsApp panitia yang sebenarnya.
 - Sebagian baris di berkas sumber belum punya NIK lengkap. Baris seperti itu
   tetap tampil di daftar, tetapi tidak bisa dicek lewat NIK.
 - Usia di luar rentang 17–110 tahun ditandai “perlu dicek” di hasil pencarian.
+  Daftar lengkapnya (termasuk usia yang tidak cocok dengan tanggal lahir di
+  NIK) ada di sheet **Usia perlu dicek** pada laporan; angka usia di halaman ini
+  tetap mengikuti berkas panitia, tidak diganti otomatis.
 
 ## Deploy
 

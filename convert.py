@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
 """Ubah data DPS (XLSX/CSV) menjadi data.json yang aman dipublikasikan.
 
-Semua sheet yang terlihat dan punya kolom NAMA + NIK akan digabung. Sheet
-tersembunyi dan sheet rekap (contoh: "Sheet1") otomatis dilewati.
+Semua sheet yang punya kolom NAMA + NIK akan digabung. Sheet RW yang terlihat
+selalu ikut; sheet tersembunyi hanya ikut kalau namanya mengandung "TAMBAHAN"
+(itu salinan daftar utama, dipakai sebagai cadangan). Sheet rekap dan sheet
+tersembunyi lainnya otomatis dilewati.
 
 Pakai:
-    python convert.py "DAFTAR PEMILIH SEMENTARA (2).xlsx"
+    python convert.py "DAFTAR PEMILIH SEMENTARA (3).xlsx"
 
 Butuh: pip install openpyxl   (hanya untuk XLSX)
 
 Yang dilakukan skrip ini:
-  * membaca sheet yang terlihat dan melewati sheet tersembunyi
+  * membaca sheet RW + sheet TAMBAHAN (termasuk yang tersembunyi)
   * merapikan RT/RW jadi 3 digit dan menebak RW dari nama sheet
-  * membuang baris ganda (satu NIK = satu pemilih)
+  * membuang baris ganda (satu NIK = satu pemilih; baris TAMBAHAN dengan
+    nama + RW yang sama dianggap orang yang sama)
   * menyamarkan NIK / No. KK (hanya sebagian digit yang tampil)
   * menyimpan sidik jari (PBKDF2) NIK & KK agar pencarian tetap bisa
     dilakukan tanpa menyimpan nomor aslinya
   * menulis data.json ringkas (array, bukan objek, supaya file kecil)
+  * menulis laporan lokal: baris ganda, NIK yang perlu dicek, dan usia yang
+    tidak cocok dengan tanggal lahir di NIK
 
-JANGAN upload file XLSX/CSV ke hosting. Hanya data.json.
+JANGAN upload file XLSX/CSV atau laporan ini ke hosting. Hanya data.json.
 """
 import csv
+import datetime
 import difflib
 import json
 import os
@@ -35,6 +41,7 @@ ITER = 100_000          # putaran PBKDF2, harus sama dengan yang dibaca index.ht
 AWAL, AKHIR = 4, 4      # digit NIK/KK yang tetap ditampilkan
 PANJANG_HASH = 32       # 128 bit cukup, file lebih kecil
 USIA_MIN, USIA_MAKS = 17, 110
+TANGGAL_ACUAN = datetime.date.today()   # acuan hitung usia dari NIK
 
 GELAR = {
     "SE", "SH", "ST", "SP", "SPD", "SSOS", "SKM", "SKEP", "SIP", "SHI", "SIKOM",
@@ -56,6 +63,48 @@ def tiga(x):
     """'7' -> '007', '007' -> '007', '' -> ''."""
     x = angka(x)
     return x.zfill(3) if x else ""
+
+
+def umur(tgl):
+    """Umur penuh pada tanggal acuan."""
+    return (TANGGAL_ACUAN.year - tgl.year -
+            ((tgl.month, tgl.day) > (TANGGAL_ACUAN.month, TANGGAL_ACUAN.day)))
+
+
+def lahir_dari_nik(nik, tertulis=None):
+    """Tanggal lahir yang tersandi di NIK (hari +40 untuk perempuan).
+
+    Tahun di NIK cuma dua digit, jadi dipilih kandidat (2000-an / 1900-an) yang
+    umurnya masih masuk akal; kalau dua-duanya masuk, yang paling dekat dengan
+    usia di berkas yang dipakai.
+    """
+    if len(nik) != 16:
+        return None
+    hari, bulan, tahun_kecil = int(nik[6:8]), int(nik[8:10]), int(nik[10:12])
+    if hari > 40:
+        hari -= 40
+    kandidat = []
+    for tahun in (2000 + tahun_kecil, 1900 + tahun_kecil):
+        try:
+            tgl = datetime.date(tahun, bulan, hari)
+        except ValueError:
+            continue
+        if USIA_MIN - 5 <= umur(tgl) <= USIA_MAKS:
+            kandidat.append(tgl)
+    if not kandidat:
+        return None
+    if tertulis:
+        kandidat.sort(key=lambda t: abs(umur(t) - tertulis))
+    return kandidat[0]
+
+
+def cek_usia(r):
+    """(usia menurut NIK, tanggal lahir) atau None kalau tidak bisa dicek."""
+    tertulis = int(r["usia"]) if r["usia"].isdigit() else None
+    tgl = lahir_dari_nik(r["nik"], tertulis)
+    if not tgl:
+        return None
+    return umur(tgl), tgl
 
 
 def judul(nama):
@@ -91,8 +140,9 @@ def baca_xlsx(path):
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     baris = []
     for sheet in wb.worksheets:
-        if sheet.sheet_state != "visible":
-            continue
+        tambahan = "TAMBAHAN" in sheet.title.upper()
+        if sheet.sheet_state != "visible" and not tambahan:
+            continue                                      # sheet rekap / catatan internal
         kepala = None
         for i, r in enumerate(sheet.iter_rows(values_only=True), start=1):
             sel = [teks(c) for c in r]
@@ -119,7 +169,7 @@ def baca_xlsx(path):
                 "rt": tiga(ambil("RT")),
                 "rw": tiga(ambil("RW")) or rw_sheet,
                 "sheet": sheet.title,
-                "tambahan": "TAMBAHAN" in sheet.title.upper(),
+                "tambahan": tambahan,
             })
     wb.close()
     return baris
@@ -184,9 +234,33 @@ def mutu(r):
             r["sheet"], r["rt"])
 
 
-def tulis_laporan(folder, bajakan):
-    """Laporan lokal tanpa NIK/KK mentah supaya panitia bisa cek data ganda."""
-    if not bajakan:
+def pisah_tambahan(rows, bajakan):
+    """Sheet TAMBAHAN pada dasarnya salinan daftar utama.
+
+    Barisnya kadang di-input ulang sehingga NIK-nya berbeda karena salah ketik.
+    Kalau hanya dipercaya lewat NIK, satu warga bisa tampil dua kali. Jadi baris
+    TAMBAHAN yang nama + RW-nya sudah ada di sheet RW dianggap orang yang sama,
+    dan kalau NIK-nya memang beda, itu dicatat untuk dicek panitia.
+    """
+    acuan = {}
+    for r in rows:
+        if not r["tambahan"]:
+            acuan.setdefault((r["nama"], r["rw"]), r)
+    tersisa = []
+    for r in rows:
+        u = acuan.get((r["nama"], r["rw"])) if r["tambahan"] else None
+        if u is not None:
+            bajakan.append(("ganda", u, r))
+            if len(r["nik"]) == len(u["nik"]) == 16 and r["nik"] != u["nik"]:
+                bajakan.append(("nik-tambahan", u, r))
+            continue
+        tersisa.append(r)
+    return tersisa
+
+
+def tulis_laporan(folder, bajakan, usia_melenceng):
+    """Laporan lokal (tanpa NIK/KK utuh) supaya panitia bisa cek data ganda."""
+    if not bajakan and not usia_melenceng:
         return
     try:
         import openpyxl
@@ -195,6 +269,7 @@ def tulis_laporan(folder, bajakan):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Duplikat"
+    jumlah_ganda = sum(1 for jenis, *_ in bajakan if jenis == "ganda")
     ws.append([
         "No.", "Nama baris duplikat", "RW duplikat", "RT duplikat",
         "Sheet duplikat", "Nama acuan (dipertahankan)", "RW acuan",
@@ -202,19 +277,23 @@ def tulis_laporan(folder, bajakan):
         "Dasar penggabungan",
     ])
     nomor = 0
+    untuk_dicek = []
     for jenis, *isi in bajakan:
         if jenis != "ganda":
             continue
         simpan, buang = isi
         nomor += 1
-        nik_sama = len(simpan["nik"]) == len(buang["nik"]) == 16 and simpan["nik"] == buang["nik"]
+        lengkap = len(simpan["nik"]) == len(buang["nik"]) == 16
+        nik_sama = lengkap and simpan["nik"] == buang["nik"]
         kk_sama = len(simpan["kk"]) == len(buang["kk"]) == 16 and simpan["kk"] == buang["kk"]
-        status_nik = ("Sama" if nik_sama else "Berbeda" if len(simpan["nik"]) == len(buang["nik"]) == 16
-                      else "Tidak lengkap")
+        status_nik = ("Sama" if nik_sama else "Berbeda" if lengkap else "Tidak lengkap")
         status_kk = ("Sama" if kk_sama else "Berbeda" if len(simpan["kk"]) == len(buang["kk"]) == 16
                      else "Tidak lengkap")
         if nik_sama:
             dasar = "NIK sama; nama cocok menurut aturan konverter"
+        elif lengkap:
+            dasar = "Nama & RW sama tapi NIK berbeda — salah satu kemungkinan salah ketik"
+            untuk_dicek.append((simpan, buang))
         elif kk_sama:
             dasar = "Nama dan No. KK sama; NIK tidak lengkap"
         else:
@@ -229,26 +308,52 @@ def tulis_laporan(folder, bajakan):
     for kolom, lebar in zip("ABCDEFGHIJKL", (7, 32, 12, 12, 22, 32, 12, 12, 22, 18, 18, 54)):
         ws.column_dimensions[kolom].width = lebar
 
-    konflik = wb.create_sheet("NIK beda nama")
-    konflik.append(["Nama dan lokasi", "Jumlah nama berbeda", "Catatan"])
+    def lokasi(r, nik=None):
+        nik = r["nik"] if nik is None else nik
+        kutip = f" — NIK {samar(nik)}" if len(nik) == 16 else ""
+        return f"{judul(r['nama'])} — RW {r['rw']}, RT {r['rt']} ({r['sheet']}{kutip})"
+
+    konflik = wb.create_sheet("NIK perlu dicek")
+    konflik.append(["No.", "Jenis", "Yang tercatat", "Yang perlu dicek"])
+    nomor = 0
     for jenis, *isi in bajakan:
-        if jenis != "nik-dobel":
-            continue
-        kantong = isi[0]
-        rincian = []
-        for _, daftar in kantong:
-            r = daftar[0]
-            rincian.append(f"{judul(r['nama'])} — RW {r['rw']}, RT {r['rt']} ({r['sheet']})")
+        if jenis == "nik-dobel":
+            kantong = isi[0]
+            nomor += 1
+            konflik.append([
+                nomor, "Satu NIK untuk nama berbeda",
+                " | ".join(lokasi(daftar[0]) for _, daftar in kantong),
+                f"NIK yang sama dipakai {len(kantong)} nama; cocokkan dengan KTP / KK aslinya.",
+            ])
+    for simpan, buang in untuk_dicek:
+        nomor += 1
         konflik.append([
-            " | ".join(rincian), len(kantong),
-            "Periksa dokumen sumber; nomor identitas tidak dicantumkan dalam laporan.",
+            nomor, "NIK berbeda, nama & RW sama",
+            f"{lokasi(simpan)} | {lokasi(buang)}",
+            "Kemungkinan salah ketik NIK di salah satu sheet; yang tampil di daftar adalah baris sheet RW.",
         ])
     konflik.freeze_panes = "A2"
     konflik.auto_filter.ref = konflik.dimensions
-    for kolom, lebar in zip("ABC", (100, 24, 72)):
+    for kolom, lebar in zip("ABCD", (7, 34, 110, 60)):
         konflik.column_dimensions[kolom].width = lebar
 
-    wb.save(os.path.join(folder, f"laporan-duplikat-{nomor}.xlsx"))
+    if usia_melenceng:
+        us = wb.create_sheet("Usia perlu dicek")
+        us.append(["No.", "Nama", "RW", "RT", "Sheet", "Usia di berkas",
+                   "Tanggal lahir menurut NIK", "Usia hitungan", "Selisih"])
+        for i, (r, u_nik, tgl) in enumerate(usia_melenceng, 1):
+            us.append([i, judul(r["nama"]), r["rw"], r["rt"], r["sheet"],
+                       int(r["usia"]) if r["usia"].isdigit() else r["usia"],
+                       tgl.strftime("%d/%m/%Y"), u_nik, u_nik - int(r["usia"] or 0)])
+        us.freeze_panes = "A2"
+        us.auto_filter.ref = us.dimensions
+        for kolom, lebar in zip("ABCDEFGHI", (7, 32, 8, 8, 14, 16, 28, 15, 10)):
+            us.column_dimensions[kolom].width = lebar
+
+    nama_file = f"laporan-duplikat-{jumlah_ganda}.xlsx"
+    tujuan = os.path.join(folder, nama_file)
+    wb.save(tujuan)
+    return tujuan
 
 
 def main():
@@ -256,13 +361,16 @@ def main():
         sys.exit(__doc__)
     src = sys.argv[1]
     mentah = baca_xlsx(src) if src.lower().endswith((".xlsx", ".xlsm")) else baca_csv(src)
+    dibaca = len(mentah)
+    dari_rw = sum(1 for r in mentah if not r["tambahan"])
+    bajakan = []                                     # catatan untuk laporan lokal
+    mentah = pisah_tambahan(mentah, bajakan)
 
     # satu NIK bisa saja dipakai dua orang berbeda (salah input). Baris seperti
     # itu JANGAN digabung, cukup dicatat di laporan untuk dicek panitia.
     kelompok = defaultdict(list)
     for r in mentah:
         kelompok[kunci(r)].append(r)
-    bajakan = []                                     # catatan untuk laporan lokal
     hasil_kelompok = []
     dobel_nik = set()                                # NIK yang dipakai lebih dari satu nama
     for grup in kelompok.values():
@@ -286,11 +394,21 @@ def main():
             bajakan.append(("nik-dobel", kantong))
 
     rows = [sorted(grup, key=mutu)[0] for grup in hasil_kelompok]
-    ganda = len(mentah) - len(rows)
 
     # buang baris tanpa wilayah sama sekali
     rows = [r for r in rows if r["rw"]]
     rows.sort(key=lambda r: (r["rw"], r["rt"], r["nama"]))
+    ganda = dibaca - len(rows)
+
+    # usia yang tertulis di berkas vs usia yang tersandi di NIK
+    usia_melenceng = []
+    for r in rows:
+        if not r["usia"].isdigit():
+            continue                                      # usia kosong, tidak bisa dibandingkan
+        cek = cek_usia(r)
+        if cek and abs(cek[0] - int(r["usia"])) > 1:
+            usia_melenceng.append((r, cek[0], cek[1]))
+    usia_melenceng.sort(key=lambda x: (x[0]["rw"], x[0]["rt"], x[0]["nama"]))
 
     salt = secrets.token_hex(12)
     unik_nik = sorted({r["nik"] for r in rows if len(r["nik"]) == 16})
@@ -324,11 +442,11 @@ def main():
             "kabupaten": "Subang",
             "tahun": 2026,
             "sumber": os.path.basename(src),
-            "dibuat": __import__("datetime").date.today().isoformat(),
+            "dibuat": datetime.date.today().isoformat(),
             "salt": salt,
             "iter": ITER,
             "jumlah": len(rows),
-            "baris": len(mentah),
+            "baris": dibaca,
             "ganda": ganda,
             "nikDobel": len(dobel_nik),
             "kk": len(unik_kk),
@@ -344,19 +462,22 @@ def main():
     with open(tujuan, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
 
-    tulis_laporan(os.path.dirname(os.path.abspath(__file__)), bajakan)
+    laporan = tulis_laporan(os.path.dirname(os.path.abspath(__file__)), bajakan, usia_melenceng)
 
-    print(f"Baris dibaca     : {len(mentah)}")
-    print(f"  dari sheet RW  : {sum(1 for r in mentah if not r['tambahan'])}")
-    print(f"  dari TAMBAHAN  : {sum(1 for r in mentah if r['tambahan'])}")
+    print(f"Baris dibaca     : {dibaca}")
+    print(f"  dari sheet RW  : {dari_rw}")
+    print(f"  dari TAMBAHAN  : {dibaca - dari_rw}")
     print(f"Pemilih unik     : {len(rows)}  ({ganda} baris ganda dibuang)")
     print(f"Kartu Keluarga   : {len(unik_kk)}")
     print(f"NIK tidak valid  : {sum(1 for r in rows if len(r['nik']) != 16)}")
     print(f"Tanpa No. KK     : {sum(1 for r in rows if len(r['kk']) != 16)}")
     print(f"Usia di luar {USIA_MIN}-{USIA_MAKS} : {sum(1 for r in rows if r['usia'] and not (USIA_MIN <= int(r['usia']) <= USIA_MAKS))}")
+    print(f"Usia vs NIK beda : {len(usia_melenceng)}")
     print(f"L / P            : {data['meta']['pria']} / {data['meta']['wanita']}")
     print("Per RW           : " + ", ".join(f"{k}={v}" for k, v in sorted(per_rw.items())))
     print(f"Ukuran data.json : {os.path.getsize(tujuan) / 1024:.0f} KB -> {tujuan}")
+    if laporan:
+        print(f"Laporan duplikat : {laporan}")
 
 
 if __name__ == "__main__":
